@@ -1,0 +1,86 @@
+Listed directory sipelayan-desa
+Viewed cat_ymd1.md:1-94
+Listed directory logs
+Viewed log-2026-08-16.log:1-107
+Viewed LoginController.php:1-113
+Viewed UserModel.php:1-72
+Viewed BaseTenantModel.php:1-87
+Viewed Filters.php:1-115
+Viewed Routes.php:1-63
+Viewed RateLimitFilter.php:1-75
+Ran command: `php -r "require 'app/Config/Paths.php'; require 'vendor/autoload.php'; \$app = Config\Services::codeigniter(); \$app->initialize(); \$userModel = new App\Models\UserModel(); \$u = \$userModel->findByEmailWithRole('superadmin@sipelayan.desa'); echo 'User found: ' . json_encode(\$u); \$db = \Config\Database::connect(); echo PHP_EOL . 'Last Query: ' . \$db->getLastQuery();"`
+Ran command: `php -r "require 'preload.php'; \$app = Config\Services::codeigniter(); \$app->initialize();"`
+Created test_check.php
+Ran command: `php test_check.php`
+Created test_check.php
+Ran command: `php test_check.php`
+Viewed spark:1-88
+Created test_check.php
+Ran command: `php test_check.php`
+Searched for "boot"
+Created test_check.php
+Ran command: `php test_check.php`
+Viewed index.php:1-60
+Created CheckLogin.php
+Ran command: `php spark check:login`
+Listed directory Models
+Viewed JenisSuratModel.php:1-27
+Viewed PermohonanSuratModel.php:1-49
+Edited BaseTenantModel.php
+Ran command: `php spark check:login`
+Ran command: `php spark cache:clear`
+Ran command: `powershell -Command "Remove-Item test_check.php -ErrorAction SilentlyContinue; Remove-Item app/Commands/CheckLogin.php -ErrorAction SilentlyContinue"`
+Ran command: `php -r "
+\$userModel = new App\Models\UserModel();
+\$u = \$userModel->findByEmailWithRole('superadmin@sipelayan.desa');
+echo 'Password verify SuperAdmin: ' . (password_verify('Admin123!', \$u['password_hash']) ? 'OK' : 'FAIL') . PHP_EOL;
+
+\$w = \$userModel->findByEmailWithRole('warga@sukamaju.desa');
+echo 'Password verify Warga: ' . (password_verify('Warga123!', \$w['password_hash']) ? 'OK' : 'FAIL') . PHP_EOL;
+"`
+Ran command: `curl -s -c cookies.txt -b cookies.txt -i http://localhost:8080/auth/login`
+Ran command: `powershell -Command "
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$res = Invoke-WebRequest -Uri 'http://localhost:8080/auth/login' -SessionVariable session
+$tokenMatch = [regex]::Match($res.Content, 'name=\"csrf_test_name\" value=\"([a-f0-9]+)\"')
+$csrfToken = $tokenMatch.Groups[1].Value
+
+$formBody = @{
+    csrf_test_name = $csrfToken
+    email = 'superadmin@sipelayan.desa'
+    password = 'Admin123!'
+}
+
+$loginRes = Invoke-WebRequest -Uri 'http://localhost:8080/auth/login' -Method POST -Body $formBody -WebSession $session -MaximumRedirection 0 -ErrorAction SilentlyContinue
+Write-Host 'Status Code:' $loginRes.StatusCode
+Write-Host 'Location Header:' $loginRes.Headers.Location
+"`
+Ran command: `curl -s -X POST -b cookies.txt -c cookies.txt -d "csrf_test_name=a0d17851ef3cc30d59c4f6f1c473d349&email=superadmin@sipelayan.desa&password=Admin123!" -i http://localhost:8080/auth/login`
+Ran command: `curl -s -D - -o NUL -X POST -b cookies.txt -c cookies.txt -d "csrf_test_name=a0d17851ef3cc30d59c4f6f1c473d349&email=superadmin@sipelayan.desa&password=Admin123!" http://localhost:8080/auth/login`
+Ran command: `powershell -Command "Remove-Item cookies.txt -ErrorAction SilentlyContinue"`
+
+Penyebab gagal login di semua akun sebelumnya disebabkan oleh **konflik mekanisme Multi-Tenant Scoping otomatis** pada sistem model:
+
+### 🔍 Penyebab Masalah
+1. **Filter Tenant Prematur**: [UserModel.php](file:///d:/vibe-coding/sipelayan-desa/app/Models/UserModel.php) menginduk ke [BaseTenantModel.php](file:///d:/vibe-coding/sipelayan-desa/app/Models/BaseTenantModel.php). Pada implementasi sebelumnya, method `initialize()` langsung menyuntikkan klausa `WHERE users.village_id = 0` ke query builder setiap kali model dibuat saat belum ada sesi login aktif.
+2. **Semua User Tidak Ditemukan**: Akibatnya, saat fungsi login mencari email pengguna, query yang dihasilkan menjadi `SELECT ... WHERE users.village_id = 0 AND users.email = '...'`. Baik Super Admin (`village_id = NULL`) maupun Admin/Operator/Warga (`village_id = 1`) tidak pernah cocok, sehingga sistem selalu memunculkan error *"Email atau password salah"*.
+3. **Rate Limiting**: Percobaan login berturut-turut yang gagal memicu proteksi *Rate Limit* di IP lokal.
+
+---
+
+### 🛠️ Perbaikan yang Telah Dilakukan
+1. **Refactoring [BaseTenantModel.php](file:///d:/vibe-coding/sipelayan-desa/app/Models/BaseTenantModel.php)**: Mengubah penambahan tenant filter menggunakan Model Events resmi CodeIgniter 4 (`$beforeFind`, `$beforeInsert`, `$beforeUpdate`, `$beforeDelete`).
+2. **Pencarian Login Lintas Tenant**: Method `withoutTenantScope()` di [UserModel.php](file:///d:/vibe-coding/sipelayan-desa/app/Models/UserModel.php#L31-L39) kini dapat mengeksekusi query pencarian email secara akurat tanpa terhalang filter `village_id = 0`.
+3. **Reset Cache & Rate Limit**: Cache aplikasi telah dibersihkan (`php spark cache:clear`).
+
+---
+
+### 🔑 Silakan Coba Login Kembali
+Akses **[http://localhost:8080/auth/login](http://localhost:8080/auth/login)** dengan kredensial berikut:
+
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Super Admin** | `superadmin@sipelayan.desa` | `Admin123!` |
+| **Admin Desa** | `admindesa@sukamaju.desa` | `Admin123!` |
+| **Operator Desa** | `operator@sukamaju.desa` | `Operator123!` |
+| **Warga** | `warga@sukamaju.desa` | `Warga123!` |

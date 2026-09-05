@@ -1,0 +1,34 @@
+Viewed Routes.php:13-25
+Viewed RateLimitFilter.php:15-68
+Viewed log-2026-08-16.log:80-127
+Viewed Routes.php:10-25
+Edited Routes.php
+Ran command: `php spark cache:clear`
+Viewed RateLimitFilter.php:15-60
+Edited RateLimitFilter.php
+Ran command: `curl -s -c cookies_test.txt -b cookies_test.txt -i http://localhost:8080/auth/login`
+Ran command: `curl -s -D - -o NUL -X POST -b cookies_test.txt -c cookies_test.txt -d "csrf_test_name=648f8524cc7c2afe87d0c8650ceb9bb8&email=superadmin@sipelayan.desa&password=Admin123!" http://localhost:8080/auth/login`
+Ran command: `curl -s -D - -o NUL -b cookies_test.txt -c cookies_test.txt http://localhost:8080/auth/logout`
+Ran command: `curl -s -D - -o NUL -b cookies_test.txt -c cookies_test.txt http://localhost:8080/auth/login`
+Ran command: `powershell -Command "Remove-Item cookies_test.txt -ErrorAction SilentlyContinue"`
+
+Penyebab munculnya notifikasi **"429 Too Many Requests"** setelah logout adalah konfigurasi **Rate Limit** yang sebelumnya terpasang secara global pada seluruh grup rute `/auth`:
+
+### 🔍 Penyebab Masalah
+1. **Rate Limit Membatasi Permintaan GET (Halaman Biasa)**:
+   Pada [Routes.php](file:///d:/vibe-coding/sipelayan-desa/app/Config/Routes.php), grup rute `auth` sebelumnya dipasangi filter `ratelimit:20:60`. Artinya, setiap kali Anda memuat form login, berpindah halaman, klik logout (`GET /auth/logout`), dan dialihkan kembali ke `GET /auth/login`, setiap *request* tersebut dihitung ke dalam kuota limit.
+2. **Akumulasi Hit Pengunjung (Guest)**:
+   Ketika Anda logout, sesi user dihancurkan (`session()->destroy()`), sehingga status user kembali menjadi `guest`. Seluruh percobaan request sebelumnya (termasuk saat pengujian login berulang kali) terakumulasi pada IP lokal Anda (`::1`) dengan identitas `guest`. Begitu kuota 20 request per menit terlampaui, halaman login langsung diblokir oleh error `429 Too Many Requests`.
+
+---
+
+### 🛠️ Perbaikan yang Telah Dilakukan
+1. **Penyesuaian Filter di [Routes.php](file:///d:/vibe-coding/sipelayan-desa/app/Config/Routes.php#L14-L21)**:
+   - Filter `RateLimit` telah dicabut dari halaman pembacaan GET biasa (`/auth/login`, `/auth/register`, dan `/auth/logout`).
+   - Rate limit kini hanya aktif secara terisolasi pada aksi pengiriman data form yang sensitif (`POST /auth/login` dan `POST /auth/register`) untuk mencegah serangan *brute force*.
+2. **Peningkatan UX di [RateLimitFilter.php](file:///d:/vibe-coding/sipelayan-desa/app/Filters/RateLimitFilter.php#L29-L43)**:
+   - Jika suatu saat rate limit terpicu pada form web biasa, sistem tidak akan menampilkan halaman putih kosong bertuliskan error 429, melainkan dialihkan kembali secara mulus dengan notifikasi/pesan peringatan (*flash message*).
+3. **Reset Cache**:
+   - Cache rate limit di server telah dibersihkan (`php spark cache:clear`).
+
+Sekarang proses login dan logout dapat digunakan secara normal tanpa akan terblokir oleh error 429 lagi. Silakan coba kembali di **[http://localhost:8080/auth/login](http://localhost:8080/auth/login)**.

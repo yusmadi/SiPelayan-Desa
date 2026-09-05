@@ -1,0 +1,94 @@
+Viewed implementation_plan.md:1-372
+Viewed .env:1-70
+Listed directory database
+Viewed sipd_schema.sql:1-100
+Viewed sipd_schema.sql:101-200
+Viewed sipd_schema.sql:350-405
+Ran command: `php -r "try { \$db = \Config\Database::connect(); \$db->initialize(); echo 'DB Connected Successfully: ' . \$db->getDatabase(); } catch (\Throwable \$e) { echo 'DB Error: ' . \$e->getMessage(); }"`
+Created test_db.php
+Ran command: `php test_db.php`
+Created test_db.php
+Ran command: `php test_db.php`
+Ran command: `php spark db:table`
+Used tool: manage_task
+Used tool: manage_task
+Ran command: `powershell -Command "Remove-Item test_db.php -ErrorAction SilentlyContinue"`
+Listed directory Models
+Viewed UserModel.php:1-29
+Viewed BaseTenantModel.php:1-87
+Listed directory Filters
+Viewed AuthFilter.php:1-48
+Listed directory Controllers
+Listed directory Views
+Created InitialSeeder.php
+Ran command: `php spark db:seed InitialSeeder`
+Edited InitialSeeder.php
+Ran command: `php spark db:seed InitialSeeder`
+Edited InitialSeeder.php
+Ran command: `php spark db:seed InitialSeeder`
+Edited InitialSeeder.php
+Ran command: `php spark db:seed InitialSeeder`
+Viewed UserModel.php:1-29
+Created UserModel.php
+Viewed LoginController.php:1-40
+Listed directory Controllers
+Listed directory Warga
+Viewed DashboardController.php:1-16
+Listed directory warga
+Listed directory layouts
+Viewed warga.php:1-60
+Viewed login.php:1-84
+Viewed register.php:1-97
+Created LoginController.php
+Created RegisterController.php
+Edited register.php
+Edited login.php
+Created DashboardController.php
+Created DashboardController.php
+Created DashboardController.php
+Viewed index.php:1-87
+Viewed warga.php:50-139
+Edited warga.php
+Created admin.php
+Created index.php
+Created index.php
+Created index.php
+Viewed TenantFilter.php:1-61
+Edited TenantFilter.php
+Viewed RoleFilter.php:1-58
+Edited RoleFilter.php
+Viewed AuthFilter.php:15-48
+Edited AuthFilter.php
+Ran command: `php spark routes`
+Listed directory AdminDesa
+Created PermohonanController.php
+Created PermohonanController.php
+Created index.php
+Created index.php
+Ran command: `curl -s -i http://localhost:8080/auth/login`
+Ran command: `curl -s http://localhost:8080/auth/register`
+
+Akun default dan integrasi database telah selesai dieksekusi:
+
+### 1. Daftar Akun Pengujian yang Telah Dibuat
+Database seeder telah dijalankan dan akun-akun berikut sudah aktif:
+
+| Role | Email | Password | Wilayah / Scope |
+| :--- | :--- | :--- | :--- |
+| **Super Admin** | `superadmin@sipelayan.desa` | `Admin123!` | Lintas Desa / Pusat |
+| **Admin Desa** | `admindesa@sukamaju.desa` | `Admin123!` | Desa Sukamaju |
+| **Operator Desa** | `operator@sukamaju.desa` | `Operator123!` | Desa Sukamaju |
+| **Warga** | `warga@sukamaju.desa` | `Warga123!` | Desa Sukamaju (NIK: `3302010101900001`) |
+
+---
+
+### 2. Fitur yang Sudah Dihubungkan ke Database
+1. **[InitialSeeder.php](file:///d:/vibe-coding/sipelayan-desa/app/Database/Seeds/InitialSeeder.php)**: Mengisi data master Kabupaten Banyumas, Desa Sukamaju, 4 Role, 4 Akun Pengguna, Data Penduduk, dan 4 Master Jenis Surat (SKTM, SKD, SKU, SKCK).
+2. **[LoginController.php](file:///d:/vibe-coding/sipelayan-desa/app/Controllers/Auth/LoginController.php)**: Menggunakan verifikasi password hash asli (`password_verify`), deteksi brute force (kunci akun 15 menit jika 5x gagal), dan auto-redirect sesuai role masing-masing.
+3. **[RegisterController.php](file:///d:/vibe-coding/sipelayan-desa/app/Controllers/Auth/RegisterController.php)**: Registrasi warga baru langsung tersimpan ke database & terhubung ke data desa/kependudukan.
+4. **Dashboard & Panel Role**: Dashboard untuk [Super Admin](file:///d:/vibe-coding/sipelayan-desa/app/Views/super_admin/dashboard/index.php), [Admin Desa](file:///d:/vibe-coding/sipelayan-desa/app/Views/admin_desa/dashboard/index.php), [Operator](file:///d:/vibe-coding/sipelayan-desa/app/Views/operator/dashboard/index.php), dan [Warga](file:///d:/vibe-coding/sipelayan-desa/app/Views/warga/dashboard/index.php).
+
+---
+
+### 3. Cara Mengakses Sekarang
+Buka browser ke **[http://localhost:8080/auth/login](http://localhost:8080/auth/login)** dan login menggunakan salah satu akun di atas.

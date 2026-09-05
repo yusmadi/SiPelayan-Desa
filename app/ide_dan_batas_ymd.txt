@@ -1,0 +1,5 @@
+tambah fitur absen digital (finger)
+
+Batas:
+  selanjutnya
+  akun Admin Desa bisa membuat akun Operator Desa
